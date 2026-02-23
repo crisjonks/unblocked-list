@@ -47,11 +47,7 @@
 </div>
 
 <script>
-/*
-  Raw contains all top-level folders and all .swf filenames from
-  https://github.com/crisjonx/unblocked-list (folders + .swf only).
-  Source: repository listing. :contentReference[oaicite:1]{index=1}
-*/
+/* folders + .swf list (from the repo) */
 const raw = `1v1.lol
 2048
 8-ball-pool
@@ -297,25 +293,25 @@ vex-3.swf
 vex.swf
 zuma.swf`;
 
-/* parse out single-token names (we already have only names here) */
+/* render items as links to /unblocked-list/<name> */
 const lines = raw.split(/\r?\n/).map(s=>s.trim()).filter(Boolean);
-
-// render into the grid
 const listEl = document.getElementById('list');
+
 function render(arr){
   listEl.innerHTML = '';
   arr.forEach(n=>{
     const a = document.createElement('a');
     a.className = 'item';
-    a.href = '/' + encodeURIComponent(n);
-    a.innerHTML = `<div class="name">${n}</div><div class="path">/${n}</div>`;
+    // IMPORTANT: links point under /unblocked-list/
+    a.href = '/unblocked-list/' + encodeURIComponent(n);
+    a.innerHTML = `<div class="name">${n}</div><div class="path">/unblocked-list/${n}</div>`;
     a.tabIndex = 0;
     listEl.appendChild(a);
   });
 }
 render(lines);
 
-// filter input
+// search filter
 document.getElementById('q').addEventListener('input', e=>{
   const v = e.target.value.trim().toLowerCase();
   if(!v) return render(lines);
@@ -323,8 +319,8 @@ document.getElementById('q').addEventListener('input', e=>{
 });
 
 // keyboard nav
-document.getElementById('list').addEventListener('keydown', e=>{
-  const items = Array.from(document.querySelectorAll('a.item'));
+listEl.addEventListener('keydown', e=>{
+  const items = Array.from(listEl.querySelectorAll('a.item'));
   if(!items.length) return;
   const cur = document.activeElement;
   let i = items.indexOf(cur);
