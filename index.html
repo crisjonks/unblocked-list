@@ -1,0 +1,362 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>unblocked-list — folders + .swf</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#000708;
+    --glow:#23ff6a;
+    --muted:#3aa37a;
+    font-family:"JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, Monaco, "Roboto Mono", monospace;
+  }
+  html,body{height:100%;margin:0;background:var(--bg);color:var(--glow);-webkit-font-smoothing:antialiased}
+  canvas#matrix{position:fixed;inset:0;z-index:-2;pointer-events:none;opacity:0.08}
+  .terminal{min-height:100vh;padding:28px 36px;display:flex;flex-direction:column;gap:12px;background:transparent}
+  .header{display:flex;align-items:center;gap:12px}
+  .logo-dots{display:flex;gap:6px}
+  .dot{width:10px;height:10px;border-radius:50%}
+  .r{background:#ff5f56}.y{background:#ffbd2e}.g{background:#27c93f}
+  .title{font-size:20px;font-weight:700;letter-spacing:1px}
+  .controls{display:flex;gap:12px;align-items:center;margin-top:8px}
+  .search{background:transparent;border:1px solid rgba(255,255,255,0.05);padding:9px 12px;border-radius:6px;color:var(--glow);outline:none;min-width:260px;font-family:inherit}
+  .list{margin-top:12px;display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px}
+  a.item{display:block;padding:10px;border-radius:6px;text-decoration:none;color:var(--glow);background:linear-gradient(180deg,rgba(255,255,255,0.01),rgba(0,0,0,0.06));border:1px solid rgba(35,255,106,0.04);font-size:13px;box-shadow:inset 0 -8px 18px rgba(0,0,0,0.45);transition:transform .09s ease,box-shadow .09s}
+  a.item:hover{transform:translateY(-3px);box-shadow:0 10px 30px rgba(0,0,0,0.6)}
+  .name{font-weight:700}
+  .path{font-size:11px;color:var(--muted);margin-top:6px;display:block}
+  @media (max-width:720px){ .list{grid-template-columns:repeat(auto-fill,minmax(160px,1fr))} .terminal{padding:18px} }
+</style>
+</head>
+<body>
+<canvas id="matrix" aria-hidden="true"></canvas>
+
+<div class="terminal" role="main" aria-label="unblocked games terminal">
+  <div class="header">
+    <div class="logo-dots" aria-hidden="true"><div class="dot r"></div><div class="dot y"></div><div class="dot g"></div></div>
+    <div class="title">unblocked-list</div>
+  </div>
+
+  <div class="controls">
+    <input id="q" class="search" placeholder="filter — type to narrow (e.g. 'moto' or '.swf')" aria-label="filter games">
+  </div>
+
+  <div id="list" class="list" tabindex="0" aria-live="polite"></div>
+</div>
+
+<script>
+/*
+  Raw contains all top-level folders and all .swf filenames from
+  https://github.com/crisjonx/unblocked-list (folders + .swf only).
+  Source: repository listing. :contentReference[oaicite:1]{index=1}
+*/
+const raw = `1v1.lol
+2048
+8-ball-pool
+a-dark-room
+among-us-online-scratch
+appel-multiplayer
+appel
+awesome-planes
+awesome-tanks-2
+awesome-tanks
+basket-random
+bitlife
+block-blast
+bob-the-robber-2
+bob-the-robber-4
+boxel-rebound
+boxing-random
+burrito-bison-launcha-libre
+celeste-classic-2-lanis-trek
+celeste-classic
+choppy-orc-autosplitter
+circloo-2
+circloo
+cloud-platformer-fun
+color-switch
+connect-4
+cookie-clicker
+crossy-road
+cut-the-rope-time-travel
+cut-the-rope
+divinastros
+doodle-jump
+doom-marines-best-friend
+doom
+drift-boss
+drive-mad
+earn-to-die-2
+egg-ascent
+eggy-car
+emulatrix
+fireboy-and-watergirl-2
+fireboy-and-watergirl-3
+fireboy-and-watergirl-4
+fnaf-2
+fnaf
+friday-night-funkin
+getaway-shootout
+heretic
+hextris
+jelly-truck
+johnny-upgrade
+js-dos
+jstetris
+little-alchemy-2
+madalin-stunt-cars-2
+merge-melon
+minecraftish-MMO
+mini-golf-online
+mini-metro-london
+minicraft
+mission-in-snowdriftland
+moschess
+moto-x3m-2
+moto-x3m-3
+moto-x3m-pool-party
+moto-x3m-spooky-land
+moto-x3m-winter
+moto-x3m
+n-gon
+neverball
+openttd
+osu-full-remake
+ovo
+paper.io-2
+pentashift
+picohot
+pip!
+plants-vs.-zombies-web-demo
+polytrack
+pong
+quake-3-arena-demo
+recoil
+red-square-game
+retro-bowl-college
+retro-bowl
+rooftop-snipers
+ruffle-swf-player
+run-3
+sandtris
+slither.io-online
+slope
+snow-rider-3d
+soccer-random
+spelunky-classic-hd
+stack
+stealing-the-diamond
+stickman-hook
+submersible
+subway-surfers
+super-mario-war
+superhot-prototype
+supertux-classic
+taking-shape
+tanuki-sunset
+temple-run-2
+tennis-physics
+terminus
+tetris/jstetris-1.20
+the-final-earth-2
+the-tale-of-the-adhd-dinosaur
+there-is-no-game
+time-shooter-2
+time-shooter-3-swat
+tiny-fishing
+tomb-of-the-mask
+tube-jumpers
+tunnel-rush
+vex-3
+vex-4
+vex-5
+vex-6
+vex-7
+vex-8
+wolfenstein-3d
+yongjin-brick-breaker
+60-seconds-burger-run-igt.swf
+60-seconds-burger-run.swf
+60-seconds-santa-run.swf
+abobos-big-adventure.swf
+age-of-war-2.swf
+age-of-war.swf
+alien-hominid.swf
+army-of-ages.swf
+asteroids.swf
+bad-piggies.swf
+bejeweled.swf
+blank.swf
+bloons-player-pack-2.swf
+bloons-player-pack-3.swf
+bloons-td-2.swf
+bloons-td-3.swf
+bloons-td-4.swf
+bloons-td.swf
+bloons-tower-defense-5.swf
+bloons.swf
+bloxorz.swf
+bob-the-robber.swf
+breaking-the-bank.swf
+btd4-exp.swf
+burrito-bison-revenge.swf
+burrito-bison.swf
+cactus-mccoy-2.swf
+cactus-mccoy.swf
+crazy-frog.swf
+douchebag-life.swf
+douchebag-workout.swf
+duck-life-2.swf
+duck-life-3.swf
+duck-life-4.swf
+duck-life.swf
+escaping-the-prison.swf
+fancy-snowboarding.swf
+fireboy&watergirl.swf
+fishy!.swf
+fleeing-the-complex.swf
+flood-runner-2.swf
+floodrunner-4.swf
+flow.swf
+gluey2.swf
+gravitee-2.swf
+gravitee.swf
+gun-mayhem-2.swf
+gun-mayhem-3.swf
+gun-mayhem-redux.swf
+gun-mayhem.swf
+hamu.swf
+infiltrating-the-airship.swf
+jacksmith.swf
+learn-to-fly-2.swf
+learn-to-fly-3.swf
+learn-to-fly-idle.swf
+learn-to-fly.swf
+light-bot.swf
+line-rider.swf
+meat-boy.swf
+motherload.swf
+my-friend-pedro.swf
+n-v2.swf
+n.swf
+pacman.swf
+papa-louie-2.swf
+papa-louie-3.swf
+papa-louie-when-pizzas-attack.swf
+papas-cheeseria.swf
+papas-donuteria.swf
+papas-freezeria.swf
+papas-pancakeria.swf
+papas-pizzeria.swf
+papas-scooperia.swf
+papas-sushiria.swf
+parking-mania.swf
+prince-of-persia-special-edition.swf
+qwop.swf
+raft-wars-2.swf
+raft-wars.swf
+redball-2.swf
+riddle-school-1.swf
+robot-unicorn-attack.swf
+rogue-soul-2.swf
+rogue-soul.swf
+run-2.swf
+run.swf
+santa-run-2.swf
+santa-run-3.swf
+santa-run-extrahard-version.swf
+snailbob.swf
+stealing-the-diamond.swf
+stick-rpg.swf
+super-mario-63.swf
+super-mario-bros-crossover.swf
+super-mario-flash.swf
+super-smash-flash.swf
+swords-and-sandals-2.swf
+swords-and-sandals-crusader.swf
+swords-and-sandals.swf
+swords-and-souls.swf
+tetris.swf
+the-binding-of-isaac-demo.swf
+the-binding-of-isaac.swf
+the-fancy-pants-adventures-remix.swf
+the-fancy-pants-adventures-world-2.swf
+the-fancy-pants-adventures-world-3.swf
+the-fancy-pants-adventures.swf
+the-impossible-quiz-2.swf
+the-impossible-quiz-book.swf
+the-impossible-quiz.swf
+the-worlds-hardest-game-2.swf
+the-worlds-hardest-game.swf
+this-is-the-only-level.swf
+unfair-mario.swf
+vex-2.swf
+vex-3.swf
+vex.swf
+zuma.swf`;
+
+/* parse out single-token names (we already have only names here) */
+const lines = raw.split(/\r?\n/).map(s=>s.trim()).filter(Boolean);
+
+// render into the grid
+const listEl = document.getElementById('list');
+function render(arr){
+  listEl.innerHTML = '';
+  arr.forEach(n=>{
+    const a = document.createElement('a');
+    a.className = 'item';
+    a.href = '/' + encodeURIComponent(n);
+    a.innerHTML = `<div class="name">${n}</div><div class="path">/${n}</div>`;
+    a.tabIndex = 0;
+    listEl.appendChild(a);
+  });
+}
+render(lines);
+
+// filter input
+document.getElementById('q').addEventListener('input', e=>{
+  const v = e.target.value.trim().toLowerCase();
+  if(!v) return render(lines);
+  render(lines.filter(x=>x.toLowerCase().includes(v)));
+});
+
+// keyboard nav
+document.getElementById('list').addEventListener('keydown', e=>{
+  const items = Array.from(document.querySelectorAll('a.item'));
+  if(!items.length) return;
+  const cur = document.activeElement;
+  let i = items.indexOf(cur);
+  if(e.key==='ArrowDown' || e.key==='ArrowRight'){ e.preventDefault(); i=(i+1)%items.length; items[i].focus(); }
+  if(e.key==='ArrowUp' || e.key==='ArrowLeft'){ e.preventDefault(); i=(i-1+items.length)%items.length; items[i].focus(); }
+});
+
+// matrix background
+(function matrix(){
+  const c = document.getElementById('matrix');
+  const ctx = c.getContext('2d');
+  function resize(){ c.width = innerWidth; c.height = innerHeight; cols = Math.max(8, Math.floor(c.width/14)); drops = Array.from({length:cols}, ()=>Math.floor(Math.random()*40)); }
+  let cols = Math.max(8, Math.floor(window.innerWidth/14));
+  let drops = Array.from({length:cols}, ()=>Math.floor(Math.random()*40));
+  const chars = "01<>/\\|[]{}abcdefghijklmnopqrstuvwxyz0123456789".split('');
+  resize(); addEventListener('resize', resize);
+  function step(){
+    ctx.fillStyle='rgba(0,0,0,0.06)'; ctx.fillRect(0,0,c.width,c.height);
+    ctx.font='12px "JetBrains Mono", monospace';
+    const colW = c.width / Math.max(1, cols);
+    for(let i=0;i<cols;i++){
+      const x = i*colW + 6;
+      const y = drops[i]*14;
+      ctx.fillStyle='rgba(35,255,106,0.12)';
+      ctx.fillText(chars[Math.floor(Math.random()*chars.length)], x, y);
+      drops[i]++;
+      if(drops[i]*14 > c.height || Math.random() > 0.995) drops[i]=0;
+    }
+    requestAnimationFrame(step);
+  }
+  requestAnimationFrame(step);
+})();
+</script>
+</body>
+</html>
