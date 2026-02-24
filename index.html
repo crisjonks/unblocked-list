@@ -3,51 +3,128 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>unblocked-list — folders + .swf</title>
+<title>unblocked-list — terminal search</title>
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;600;700&display=swap" rel="stylesheet">
 <style>
   :root{
     --bg:#000708;
     --glow:#23ff6a;
     --muted:#3aa37a;
-    font-family:"JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, Monaco, "Roboto Mono", monospace;
+    --panel-alpha:0.04;
+    font-family:"JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, "Roboto Mono", "Courier New", monospace;
   }
   html,body{height:100%;margin:0;background:var(--bg);color:var(--glow);-webkit-font-smoothing:antialiased}
+  /* matrix bg covers full viewport */
   canvas#matrix{position:fixed;inset:0;z-index:-2;pointer-events:none;opacity:0.08}
-  .terminal{min-height:100vh;padding:28px 36px;display:flex;flex-direction:column;gap:12px;background:transparent}
+
+  /* page */
+  .wrap{min-height:100vh;box-sizing:border-box;padding:28px 36px;display:flex;flex-direction:column;gap:14px;background:transparent}
   .header{display:flex;align-items:center;gap:12px}
-  .logo-dots{display:flex;gap:6px}
+  .dots{display:flex;gap:6px}
   .dot{width:10px;height:10px;border-radius:50%}
   .r{background:#ff5f56}.y{background:#ffbd2e}.g{background:#27c93f}
-  .title{font-size:20px;font-weight:700;letter-spacing:1px}
-  .controls{display:flex;gap:12px;align-items:center;margin-top:8px}
-  .search{background:transparent;border:1px solid rgba(255,255,255,0.05);padding:9px 12px;border-radius:6px;color:var(--glow);outline:none;min-width:260px;font-family:inherit}
-  .list{margin-top:12px;display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px}
-  a.item{display:block;padding:10px;border-radius:6px;text-decoration:none;color:var(--glow);background:linear-gradient(180deg,rgba(255,255,255,0.01),rgba(0,0,0,0.06));border:1px solid rgba(35,255,106,0.04);font-size:13px;box-shadow:inset 0 -8px 18px rgba(0,0,0,0.45);transition:transform .09s ease,box-shadow .09s}
+  .title{font-size:20px;font-weight:700;color:var(--glow);letter-spacing:1px}
+
+  /* terminal input area */
+  .term {
+    width:100%;
+    max-width:920px;
+    background:rgba(0,0,0,0.18);
+    border:1px solid rgba(255,255,255,0.03);
+    padding:14px 16px;
+    border-radius:8px;
+    box-shadow:0 6px 28px rgba(0,0,0,0.6);
+    position:relative;
+    font-size:15px;
+  }
+
+  .prompt {
+    display:flex;align-items:center;gap:12px;
+  }
+  .prompt .caret {
+    color:var(--muted);
+    font-weight:600;
+    min-width:74px;
+  }
+  .input-wrap{flex:1;position:relative}
+  input.terminal-input{
+    width:100%;
+    background:transparent;
+    border:0;
+    outline:none;
+    color:var(--glow);
+    font-family:inherit;
+    font-size:16px;
+    padding:6px 4px;
+  }
+  .hint { color:var(--muted); font-size:12px; margin-top:8px; }
+
+  /* suggestion popup (IDE style) */
+  .suggestions {
+    position:absolute;
+    top:100%;
+    left:0;
+    margin-top:8px;
+    width:min(640px,100%);
+    background:rgba(0,0,0,0.92);
+    border:1px solid rgba(255,255,255,0.04);
+    border-radius:8px;
+    box-shadow:0 8px 30px rgba(0,0,0,0.6);
+    overflow:hidden;
+    z-index:40;
+  }
+  .suggestions ul{list-style:none;margin:0;padding:6px 6px;max-height:320px;overflow:auto}
+  .suggestions li{
+    padding:8px 10px;border-radius:6px;margin:6px 4px;color:var(--muted);
+    display:flex;justify-content:space-between;gap:10px;align-items:center;font-size:14px;
+    cursor:pointer;
+  }
+  .suggestions li:hover, .suggestions li.active{
+    background:linear-gradient(90deg, rgba(35,255,106,0.06), rgba(35,255,106,0.03));
+    color:var(--glow);
+  }
+  .suggest-name{font-weight:700}
+
+  /* filtered grid of games below */
+  .grid{margin-top:18px;display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px}
+  a.item{display:block;padding:10px;border-radius:6px;text-decoration:none;color:var(--glow);
+    background:linear-gradient(180deg,rgba(255,255,255,0.01),rgba(0,0,0,0.06));
+    border:1px solid rgba(35,255,106,var(--panel-alpha));font-size:13px;box-shadow:inset 0 -8px 18px rgba(0,0,0,0.45);
+    transition:transform .09s ease,box-shadow .09s}
   a.item:hover{transform:translateY(-3px);box-shadow:0 10px 30px rgba(0,0,0,0.6)}
   .name{font-weight:700}
   .path{font-size:11px;color:var(--muted);margin-top:6px;display:block}
-  @media (max-width:720px){ .list{grid-template-columns:repeat(auto-fill,minmax(160px,1fr))} .terminal{padding:18px} }
+
+  @media (max-width:780px){ .term{padding:12px} .grid{grid-template-columns:repeat(auto-fill,minmax(160px,1fr))} }
 </style>
 </head>
 <body>
 <canvas id="matrix" aria-hidden="true"></canvas>
 
-<div class="terminal" role="main" aria-label="unblocked games terminal">
+<div class="wrap">
   <div class="header">
-    <div class="logo-dots" aria-hidden="true"><div class="dot r"></div><div class="dot y"></div><div class="dot g"></div></div>
+    <div class="dots" aria-hidden="true"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span></div>
     <div class="title">unblocked-list</div>
   </div>
 
-  <div class="controls">
-    <input id="q" class="search" placeholder="filter — type to narrow (e.g. 'moto' or '.swf')" aria-label="filter games">
+  <div class="term" role="search" aria-label="terminal search">
+    <div class="prompt">
+      <div class="caret">&gt; search</div>
+      <div class="input-wrap">
+        <input id="termInput" class="terminal-input" aria-autocomplete="list" autocomplete="off" spellcheck="false" placeholder="" />
+        <div id="suggestions" class="suggestions" style="display:none" role="listbox" aria-label="suggestions">
+          <ul id="suggestList"></ul>
+        </div>
+      </div>
+    </div>
+    <div class="hint">Tab to autocomplete, Enter to open (exact match or selection). Use ↑ ↓ to move.</div>
   </div>
 
-  <div id="list" class="list" tabindex="0" aria-live="polite"></div>
+  <div id="grid" class="grid" aria-live="polite"></div>
 </div>
 
 <script>
-/* folders + .swf list (from the repo) */
+/* original repo-derived list with folders + non-.swf files only */
 const raw = `1v1.lol
 2048
 8-ball-pool
@@ -172,179 +249,194 @@ vex-6
 vex-7
 vex-8
 wolfenstein-3d
-yongjin-brick-breaker
-60-seconds-burger-run-igt.swf
-60-seconds-burger-run.swf
-60-seconds-santa-run.swf
-abobos-big-adventure.swf
-age-of-war-2.swf
-age-of-war.swf
-alien-hominid.swf
-army-of-ages.swf
-asteroids.swf
-bad-piggies.swf
-bejeweled.swf
-blank.swf
-bloons-player-pack-2.swf
-bloons-player-pack-3.swf
-bloons-td-2.swf
-bloons-td-3.swf
-bloons-td-4.swf
-bloons-td.swf
-bloons-tower-defense-5.swf
-bloons.swf
-bloxorz.swf
-bob-the-robber.swf
-breaking-the-bank.swf
-btd4-exp.swf
-burrito-bison-revenge.swf
-burrito-bison.swf
-cactus-mccoy-2.swf
-cactus-mccoy.swf
-crazy-frog.swf
-douchebag-life.swf
-douchebag-workout.swf
-duck-life-2.swf
-duck-life-3.swf
-duck-life-4.swf
-duck-life.swf
-escaping-the-prison.swf
-fancy-snowboarding.swf
-fireboy&watergirl.swf
-fishy!.swf
-fleeing-the-complex.swf
-flood-runner-2.swf
-floodrunner-4.swf
-flow.swf
-gluey2.swf
-gravitee-2.swf
-gravitee.swf
-gun-mayhem-2.swf
-gun-mayhem-3.swf
-gun-mayhem-redux.swf
-gun-mayhem.swf
-hamu.swf
-infiltrating-the-airship.swf
-jacksmith.swf
-learn-to-fly-2.swf
-learn-to-fly-3.swf
-learn-to-fly-idle.swf
-learn-to-fly.swf
-light-bot.swf
-line-rider.swf
-meat-boy.swf
-motherload.swf
-my-friend-pedro.swf
-n-v2.swf
-n.swf
-pacman.swf
-papa-louie-2.swf
-papa-louie-3.swf
-papa-louie-when-pizzas-attack.swf
-papas-cheeseria.swf
-papas-donuteria.swf
-papas-freezeria.swf
-papas-pancakeria.swf
-papas-pizzeria.swf
-papas-scooperia.swf
-papas-sushiria.swf
-parking-mania.swf
-prince-of-persia-special-edition.swf
-qwop.swf
-raft-wars-2.swf
-raft-wars.swf
-redball-2.swf
-riddle-school-1.swf
-robot-unicorn-attack.swf
-rogue-soul-2.swf
-rogue-soul.swf
-run-2.swf
-run.swf
-santa-run-2.swf
-santa-run-3.swf
-santa-run-extrahard-version.swf
-snailbob.swf
-stealing-the-diamond.swf
-stick-rpg.swf
-super-mario-63.swf
-super-mario-bros-crossover.swf
-super-mario-flash.swf
-super-smash-flash.swf
-swords-and-sandals-2.swf
-swords-and-sandals-crusader.swf
-swords-and-sandals.swf
-swords-and-souls.swf
-tetris.swf
-the-binding-of-isaac-demo.swf
-the-binding-of-isaac.swf
-the-fancy-pants-adventures-remix.swf
-the-fancy-pants-adventures-world-2.swf
-the-fancy-pants-adventures-world-3.swf
-the-fancy-pants-adventures.swf
-the-impossible-quiz-2.swf
-the-impossible-quiz-book.swf
-the-impossible-quiz.swf
-the-worlds-hardest-game-2.swf
-the-worlds-hardest-game.swf
-this-is-the-only-level.swf
-unfair-mario.swf
-vex-2.swf
-vex-3.swf
-vex.swf
-zuma.swf`;
+yongjin-brick-breaker`;
 
-/* render items as links to /unblocked-list/<name> */
-const lines = raw.split(/\r?\n/).map(s=>s.trim()).filter(Boolean);
-const listEl = document.getElementById('list');
+/* build files array (exclude any .swf accidentally present) */
+const files = raw.split(/\r?\n/).map(s=>s.trim()).filter(Boolean).filter(f => !f.toLowerCase().endsWith('.swf'));
 
-function render(arr){
-  listEl.innerHTML = '';
-  arr.forEach(n=>{
-    const a = document.createElement('a');
-    a.className = 'item';
-    // IMPORTANT: links point under /unblocked-list/
-    a.href = '/unblocked-list/' + encodeURIComponent(n);
-    a.innerHTML = `<div class="name">${n}</div><div class="path">/unblocked-list/${n}</div>`;
-    a.tabIndex = 0;
-    listEl.appendChild(a);
+/* DOM refs */
+const input = document.getElementById('termInput');
+const suggBox = document.getElementById('suggestions');
+const suggList = document.getElementById('suggestList');
+const grid = document.getElementById('grid');
+
+/* state */
+let suggestions = [];
+let active = -1; // index in suggestions
+
+/* helper: compute suggestions based on current q */
+function computeSuggestions(q){
+  if(!q) return []; 
+  const ql = q.toLowerCase();
+  // prioritize startsWith matches, then contains
+  const starts = files.filter(f=>f.toLowerCase().startsWith(ql));
+  const contains = files.filter(f=>!f.toLowerCase().startsWith(ql) && f.toLowerCase().includes(ql));
+  return [...starts, ...contains].slice(0, 8);
+}
+
+/* render suggestions popup */
+function renderSuggestions(arr){
+  suggestions = arr;
+  active = arr.length ? 0 : -1;
+  if(!arr.length){ suggBox.style.display='none'; suggList.innerHTML=''; return;}
+  suggBox.style.display='block';
+  suggList.innerHTML = '';
+  arr.forEach((s, i) => {
+    const li = document.createElement('li');
+    li.setAttribute('role','option');
+    li.dataset.index = i;
+    li.innerHTML = `<span class="suggest-name">${escapeHtml(s)}</span><span class="muted">${escapeHtml('/unblocked-list/' + s)}</span>`;
+    if(i === active) li.classList.add('active');
+    li.addEventListener('mouseenter', ()=>{ setActive(i); });
+    li.addEventListener('mouseleave', ()=>{ setActive(-1); });
+    li.addEventListener('mousedown', (ev)=>{ // mousedown to avoid blur before click
+      ev.preventDefault();
+      selectSuggestion(i);
+    });
+    suggList.appendChild(li);
   });
 }
-render(lines);
 
-// search filter
-document.getElementById('q').addEventListener('input', e=>{
-  const v = e.target.value.trim().toLowerCase();
-  if(!v) return render(lines);
-  render(lines.filter(x=>x.toLowerCase().includes(v)));
+/* set active suggestion index (visual) */
+function setActive(index){
+  const lis = suggList.querySelectorAll('li');
+  lis.forEach(li=>li.classList.remove('active'));
+  if(index >=0 && lis[index]) lis[index].classList.add('active');
+  active = index;
+}
+
+/* autocomplete current input from active suggestion or first suggestion */
+function autocomplete(){
+  if(suggestions.length === 0) return;
+  const idx = active >= 0 ? active : 0;
+  input.value = suggestions[idx];
+  // trigger update
+  onInput();
+}
+
+/* when a suggestion is chosen (enter or click) */
+function selectSuggestion(idx){
+  if(idx < 0 || idx >= suggestions.length) return;
+  const name = suggestions[idx];
+  // navigate to the URL
+  const url = '/unblocked-list/' + encodeURIComponent(name);
+  window.location.href = url;
+}
+
+/* escape html for safe rendering */
+function escapeHtml(str){ return str.replace(/[&<>"']/g, s=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[s])); }
+
+/* update grid below and suggestions as user types */
+function onInput(){
+  const q = input.value;
+  // suggestions
+  const sug = computeSuggestions(q);
+  renderSuggestions(sug);
+  // render grid (full filtered list, not just suggestions)
+  renderGrid(q);
+}
+
+/* render grid of games filtered by q (if q empty show all) */
+function renderGrid(q){
+  const ql = (q || '').toLowerCase();
+  const filtered = ql ? files.filter(f => f.toLowerCase().includes(ql)) : files;
+  grid.innerHTML = '';
+  filtered.forEach(name => {
+    const a = document.createElement('a');
+    a.className = 'item';
+    a.href = '/unblocked-list/' + encodeURIComponent(name);
+    a.innerHTML = `<div class="name">${escapeHtml(name)}</div><div class="path">/unblocked-list/${escapeHtml(name)}</div>`;
+    grid.appendChild(a);
+  });
+}
+
+/* helpers for keyboard nav */
+function moveActive(delta){
+  if(suggestions.length === 0) return;
+  active = (active + delta + suggestions.length) % suggestions.length;
+  setActive(active);
+  // ensure active item visible
+  const lis = suggList.querySelectorAll('li');
+  if(lis[active]) lis[active].scrollIntoView({block:'nearest'});
+}
+
+/* input event handlers */
+input.addEventListener('input', onInput);
+
+input.addEventListener('keydown', (e) => {
+  if(e.key === 'ArrowDown'){
+    e.preventDefault();
+    moveActive(1);
+  } else if(e.key === 'ArrowUp'){
+    e.preventDefault();
+    moveActive(-1);
+  } else if(e.key === 'Tab'){
+    if(suggestions.length){
+      e.preventDefault();
+      autocomplete();
+      // reopen suggestions for new input
+      setTimeout(onInput, 0);
+    }
+  } else if(e.key === 'Enter'){
+    e.preventDefault();
+    if(active >= 0 && suggestions[active]){
+      selectSuggestion(active);
+      return;
+    }
+    // exact-match navigation (case-insensitive)
+    const typed = input.value.trim();
+    if(!typed) return;
+    const match = files.find(f => f.toLowerCase() === typed.toLowerCase());
+    if(match){
+      window.location.href = '/unblocked-list/' + encodeURIComponent(match);
+    } else {
+      // no exact match: if there is exactly one suggestion, navigate there
+      if(suggestions.length === 1){
+        selectSuggestion(0);
+      }
+    }
+  } else if(e.key === 'Escape'){
+    // hide suggestions
+    suggestions = []; renderSuggestions([]);
+  }
 });
 
-// keyboard nav
-listEl.addEventListener('keydown', e=>{
-  const items = Array.from(listEl.querySelectorAll('a.item'));
-  if(!items.length) return;
-  const cur = document.activeElement;
-  let i = items.indexOf(cur);
-  if(e.key==='ArrowDown' || e.key==='ArrowRight'){ e.preventDefault(); i=(i+1)%items.length; items[i].focus(); }
-  if(e.key==='ArrowUp' || e.key==='ArrowLeft'){ e.preventDefault(); i=(i-1+items.length)%items.length; items[i].focus(); }
+/* click outside hides suggestions */
+document.addEventListener('click', (ev)=>{
+  if(!ev.target.closest('.term')){ suggestions = []; renderSuggestions([]); }
 });
 
-// matrix background
+/* initial render: show full grid and placeholder text in input */
+renderGrid('');
+input.placeholder = ''; // terminal shows prompt on the left instead
+input.value = '';
+// focus input on page load
+setTimeout(()=> input.focus(), 150);
+
+/* matrix background (full-screen) */
 (function matrix(){
   const c = document.getElementById('matrix');
   const ctx = c.getContext('2d');
-  function resize(){ c.width = innerWidth; c.height = innerHeight; cols = Math.max(8, Math.floor(c.width/14)); drops = Array.from({length:cols}, ()=>Math.floor(Math.random()*40)); }
-  let cols = Math.max(8, Math.floor(window.innerWidth/14));
+  let cols = Math.max(6, Math.floor(window.innerWidth / 14));
   let drops = Array.from({length:cols}, ()=>Math.floor(Math.random()*40));
   const chars = "01<>/\\|[]{}abcdefghijklmnopqrstuvwxyz0123456789".split('');
-  resize(); addEventListener('resize', resize);
+  function resize(){
+    c.width = window.innerWidth;
+    c.height = window.innerHeight;
+    cols = Math.max(6, Math.floor(c.width / 14));
+    drops = Array.from({length:cols}, ()=>Math.floor(Math.random()*40));
+  }
+  window.addEventListener('resize', resize);
+  resize();
   function step(){
-    ctx.fillStyle='rgba(0,0,0,0.06)'; ctx.fillRect(0,0,c.width,c.height);
-    ctx.font='12px "JetBrains Mono", monospace';
+    ctx.fillStyle = 'rgba(0,0,0,0.06)';
+    ctx.fillRect(0,0,c.width,c.height);
+    ctx.font = '12px "JetBrains Mono", monospace';
     const colW = c.width / Math.max(1, cols);
     for(let i=0;i<cols;i++){
       const x = i*colW + 6;
       const y = drops[i]*14;
-      ctx.fillStyle='rgba(35,255,106,0.12)';
+      ctx.fillStyle = 'rgba(35,255,106,0.12)';
       ctx.fillText(chars[Math.floor(Math.random()*chars.length)], x, y);
       drops[i]++;
       if(drops[i]*14 > c.height || Math.random() > 0.995) drops[i]=0;
