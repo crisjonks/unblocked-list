@@ -8,45 +8,155 @@
 <style>
   :root{
     --bg:#000708;
+    --bg2:#071010;
+    --panel: rgba(0, 0, 0, 0.52);
+    --panel-2: rgba(0, 0, 0, 0.78);
     --glow:#23ff6a;
-    --muted:#3aa37a;
-    --panel-alpha:0.04;
+    --glow-soft: rgba(35,255,106,0.18);
+    --muted:#6fa98b;
+    --border: rgba(35,255,106,0.13);
+    --border-strong: rgba(35,255,106,0.28);
+    --text:#d6ffe2;
+    --danger:#ff6b6b;
     font-family:"JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, "Roboto Mono", "Courier New", monospace;
   }
-  html,body{height:100%;margin:0;background:var(--bg);color:var(--glow);-webkit-font-smoothing:antialiased}
-  /* matrix bg covers full viewport */
-  canvas#matrix{position:fixed;inset:0;z-index:-2;pointer-events:none;opacity:0.08}
 
-  /* page */
-  .wrap{min-height:100vh;box-sizing:border-box;padding:28px 36px;display:flex;flex-direction:column;gap:14px;background:transparent}
-  .header{display:flex;align-items:center;gap:12px}
-  .dots{display:flex;gap:6px}
+  html, body{
+    height:100%;
+    margin:0;
+    background:
+      radial-gradient(circle at top, rgba(35,255,106,0.08), transparent 30%),
+      linear-gradient(180deg, var(--bg), var(--bg2));
+    color:var(--text);
+    -webkit-font-smoothing:antialiased;
+    overflow-x:hidden;
+  }
+
+  canvas#matrix{
+    position:fixed;
+    inset:0;
+    z-index:-2;
+    pointer-events:none;
+    opacity:0.08;
+  }
+
+  .wrap{
+    min-height:100vh;
+    box-sizing:border-box;
+    padding:28px 36px 112px;
+    display:flex;
+    flex-direction:column;
+    gap:14px;
+    background:transparent;
+  }
+
+  .header{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+    flex-wrap:wrap;
+  }
+
+  .header-left{
+    display:flex;
+    align-items:center;
+    gap:12px;
+    min-width:0;
+  }
+
+  .dots{
+    display:flex;
+    gap:6px;
+    flex-shrink:0;
+  }
+
   .dot{width:10px;height:10px;border-radius:50%}
   .r{background:#ff5f56}.y{background:#ffbd2e}.g{background:#27c93f}
-  .title{font-size:20px;font-weight:700;color:var(--glow);letter-spacing:1px}
 
-  /* terminal input area */
-  .term {
+  .title-wrap{
+    display:flex;
+    flex-direction:column;
+    gap:4px;
+    min-width:0;
+  }
+
+  .title{
+    font-size:20px;
+    font-weight:700;
+    color:var(--glow);
+    letter-spacing:1px;
+    white-space:nowrap;
+  }
+
+  .subtitle{
+    font-size:12px;
+    color:var(--muted);
+    line-height:1.4;
+  }
+
+  .header-actions{
+    display:flex;
+    gap:10px;
+    flex-wrap:wrap;
+    align-items:center;
+  }
+
+  .btn{
+    appearance:none;
+    border:1px solid var(--border);
+    background:linear-gradient(180deg, rgba(35,255,106,0.10), rgba(35,255,106,0.02));
+    color:var(--glow);
+    font:inherit;
+    font-size:13px;
+    padding:10px 14px;
+    border-radius:12px;
+    cursor:pointer;
+    transition:transform .12s ease, border-color .12s ease, background .12s ease, box-shadow .12s ease;
+    box-shadow:0 6px 24px rgba(0,0,0,0.28);
+  }
+
+  .btn:hover{
+    transform:translateY(-1px);
+    border-color:var(--border-strong);
+    background:linear-gradient(180deg, rgba(35,255,106,0.16), rgba(35,255,106,0.05));
+    box-shadow:0 10px 28px rgba(0,0,0,0.34);
+  }
+
+  .btn.primary{
+    background:linear-gradient(180deg, rgba(35,255,106,0.18), rgba(35,255,106,0.05));
+  }
+
+  .term{
     width:100%;
     max-width:920px;
-    background:rgba(0,0,0,0.18);
-    border:1px solid rgba(255,255,255,0.03);
+    background:var(--panel);
+    border:1px solid rgba(255,255,255,0.04);
     padding:14px 16px;
-    border-radius:8px;
-    box-shadow:0 6px 28px rgba(0,0,0,0.6);
+    border-radius:16px;
+    box-shadow:0 10px 30px rgba(0,0,0,0.45);
     position:relative;
     font-size:15px;
+    backdrop-filter: blur(10px);
   }
 
-  .prompt {
-    display:flex;align-items:center;gap:12px;
+  .prompt{
+    display:flex;
+    align-items:center;
+    gap:12px;
   }
-  .prompt .caret {
+
+  .prompt .caret{
     color:var(--muted);
     font-weight:600;
     min-width:74px;
   }
-  .input-wrap{flex:1;position:relative}
+
+  .input-wrap{
+    flex:1;
+    position:relative;
+  }
+
   input.terminal-input{
     width:100%;
     background:transparent;
@@ -57,45 +167,503 @@
     font-size:16px;
     padding:6px 4px;
   }
-  .hint { color:var(--muted); font-size:12px; margin-top:8px; }
 
-  /* suggestion popup (IDE style) */
-  .suggestions {
+  .hint{
+    color:var(--muted);
+    font-size:12px;
+    margin-top:8px;
+    line-height:1.4;
+  }
+
+  .suggestions{
     position:absolute;
     top:100%;
     left:0;
     margin-top:8px;
     width:min(640px,100%);
     background:rgba(0,0,0,0.92);
-    border:1px solid rgba(255,255,255,0.04);
-    border-radius:8px;
-    box-shadow:0 8px 30px rgba(0,0,0,0.6);
+    border:1px solid rgba(255,255,255,0.05);
+    border-radius:12px;
+    box-shadow:0 16px 36px rgba(0,0,0,0.6);
     overflow:hidden;
     z-index:40;
+    backdrop-filter: blur(12px);
   }
-  .suggestions ul{list-style:none;margin:0;padding:6px 6px;max-height:320px;overflow:auto}
+
+  .suggestions ul{
+    list-style:none;
+    margin:0;
+    padding:6px 6px;
+    max-height:320px;
+    overflow:auto;
+  }
+
   .suggestions li{
-    padding:8px 10px;border-radius:6px;margin:6px 4px;color:var(--muted);
-    display:flex;justify-content:space-between;gap:10px;align-items:center;font-size:14px;
+    padding:10px 12px;
+    border-radius:10px;
+    margin:6px 4px;
+    color:var(--muted);
+    display:flex;
+    justify-content:space-between;
+    gap:10px;
+    align-items:center;
+    font-size:14px;
     cursor:pointer;
   }
-  .suggestions li:hover, .suggestions li.active{
-    background:linear-gradient(90deg, rgba(35,255,106,0.06), rgba(35,255,106,0.03));
+
+  .suggestions li:hover,
+  .suggestions li.active{
+    background:linear-gradient(90deg, rgba(35,255,106,0.10), rgba(35,255,106,0.03));
     color:var(--glow);
   }
+
   .suggest-name{font-weight:700}
+  .suggest-path{font-size:11px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:45%}
 
-  /* filtered grid of games below */
-  .grid{margin-top:18px;display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px}
-  a.item{display:block;padding:10px;border-radius:6px;text-decoration:none;color:var(--glow);
-    background:linear-gradient(180deg,rgba(255,255,255,0.01),rgba(0,0,0,0.06));
-    border:1px solid rgba(35,255,106,var(--panel-alpha));font-size:13px;box-shadow:inset 0 -8px 18px rgba(0,0,0,0.45);
-    transition:transform .09s ease,box-shadow .09s}
-  a.item:hover{transform:translateY(-3px);box-shadow:0 10px 30px rgba(0,0,0,0.6)}
-  .name{font-weight:700}
-  .path{font-size:11px;color:var(--muted);margin-top:6px;display:block}
+  .grid{
+    margin-top:18px;
+    display:grid;
+    grid-template-columns:repeat(auto-fill,minmax(220px,1fr));
+    gap:10px;
+  }
 
-  @media (max-width:780px){ .term{padding:12px} .grid{grid-template-columns:repeat(auto-fill,minmax(160px,1fr))} }
+  a.item{
+    display:block;
+    padding:12px 12px 11px;
+    border-radius:14px;
+    text-decoration:none;
+    color:var(--glow);
+    background:linear-gradient(180deg,rgba(255,255,255,0.02),rgba(0,0,0,0.14));
+    border:1px solid var(--border);
+    font-size:13px;
+    box-shadow:inset 0 -8px 18px rgba(0,0,0,0.38), 0 10px 24px rgba(0,0,0,0.16);
+    transition:transform .09s ease,box-shadow .09s ease,border-color .09s ease;
+    min-height:72px;
+  }
+
+  a.item:hover{
+    transform:translateY(-3px);
+    border-color:var(--border-strong);
+    box-shadow:0 14px 34px rgba(0,0,0,0.45);
+  }
+
+  .name{
+    font-weight:700;
+    line-height:1.35;
+  }
+
+  .path{
+    font-size:11px;
+    color:var(--muted);
+    margin-top:8px;
+    display:block;
+    word-break:break-all;
+    line-height:1.35;
+  }
+
+  .pill-row{
+    display:flex;
+    gap:8px;
+    flex-wrap:wrap;
+    margin-top:12px;
+  }
+
+  .pill{
+    font-size:11px;
+    color:var(--muted);
+    border:1px solid rgba(255,255,255,0.06);
+    border-radius:999px;
+    padding:6px 10px;
+    background:rgba(255,255,255,0.02);
+  }
+
+  /* Game overlay */
+  #gameOverlay{
+    position:fixed;
+    inset:0;
+    display:none;
+    z-index:2000;
+    background:rgba(0,0,0,0.92);
+    backdrop-filter: blur(8px);
+  }
+
+  #gameOverlay.open{display:block;}
+
+  #gameFrame{
+    width:100%;
+    height:100%;
+    border:0;
+    background:#000;
+  }
+
+  .overlay-topbar{
+    position:fixed;
+    left:16px;
+    top:16px;
+    z-index:2100;
+    display:flex;
+    gap:10px;
+    align-items:center;
+    pointer-events:none;
+  }
+
+  .overlay-chip{
+    pointer-events:auto;
+    border:1px solid var(--border);
+    background:rgba(0,0,0,0.6);
+    color:var(--glow);
+    border-radius:999px;
+    padding:10px 12px;
+    font:inherit;
+    font-size:13px;
+    cursor:pointer;
+    backdrop-filter: blur(10px);
+  }
+
+  .overlay-chip:hover{
+    border-color:var(--border-strong);
+  }
+
+  .back-edge{
+    position:fixed;
+    left:0;
+    top:0;
+    width:18px;
+    height:100vh;
+    z-index:2050;
+    background:linear-gradient(90deg, rgba(35,255,106,0.16), rgba(35,255,106,0.02), transparent);
+    opacity:0;
+    transition:opacity .16s ease;
+    display:flex;
+    align-items:center;
+    pointer-events:auto;
+  }
+
+  .back-edge:hover,
+  .back-edge.show{
+    opacity:1;
+  }
+
+  .back-button{
+    margin-left:2px;
+    width:46px;
+    height:78px;
+    border-radius:0 16px 16px 0;
+    border:1px solid var(--border);
+    border-left:none;
+    background:rgba(0,0,0,0.78);
+    color:var(--glow);
+    font-size:22px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    cursor:pointer;
+    box-shadow:0 10px 24px rgba(0,0,0,0.35);
+    transform:translateX(-8px);
+    transition:transform .16s ease, border-color .16s ease, background .16s ease;
+  }
+
+  .back-edge:hover .back-button,
+  .back-edge.show .back-button{
+    transform:translateX(0);
+  }
+
+  .back-button:hover{
+    background:rgba(35,255,106,0.10);
+    border-color:var(--border-strong);
+  }
+
+  /* Chat launcher */
+  .chat-launcher{
+    position:fixed;
+    right:20px;
+    bottom:20px;
+    z-index:2500;
+    width:62px;
+    height:62px;
+    border-radius:18px;
+    border:1px solid var(--border);
+    background:linear-gradient(180deg, rgba(35,255,106,0.20), rgba(35,255,106,0.06));
+    color:var(--glow);
+    cursor:pointer;
+    box-shadow:0 14px 34px rgba(0,0,0,0.45);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size:24px;
+    transition:transform .14s ease, border-color .14s ease, background .14s ease;
+  }
+
+  .chat-launcher:hover{
+    transform:translateY(-2px);
+    border-color:var(--border-strong);
+  }
+
+  .chat-panel{
+    position:fixed;
+    right:20px;
+    bottom:92px;
+    width:min(390px, calc(100vw - 40px));
+    height:min(580px, calc(100vh - 120px));
+    z-index:2490;
+    display:none;
+    flex-direction:column;
+    overflow:hidden;
+    border-radius:22px;
+    border:1px solid var(--border);
+    background:rgba(0,0,0,0.84);
+    backdrop-filter: blur(14px);
+    box-shadow:0 18px 50px rgba(0,0,0,0.55);
+  }
+
+  .chat-panel.open{display:flex;}
+
+  .chat-head{
+    padding:14px 14px 12px;
+    border-bottom:1px solid rgba(255,255,255,0.06);
+    display:flex;
+    align-items:flex-start;
+    justify-content:space-between;
+    gap:12px;
+    background:linear-gradient(180deg, rgba(35,255,106,0.10), rgba(35,255,106,0.03));
+  }
+
+  .chat-head h2{
+    margin:0;
+    font-size:15px;
+    color:var(--glow);
+  }
+
+  .chat-head .small{
+    margin-top:6px;
+    font-size:11px;
+    line-height:1.4;
+    color:var(--muted);
+  }
+
+  .chat-head-actions{
+    display:flex;
+    gap:8px;
+    flex-shrink:0;
+  }
+
+  .icon-btn{
+    width:34px;
+    height:34px;
+    border-radius:10px;
+    border:1px solid var(--border);
+    background:rgba(255,255,255,0.03);
+    color:var(--glow);
+    cursor:pointer;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+  }
+
+  .icon-btn:hover{border-color:var(--border-strong)}
+
+  .chat-messages{
+    flex:1;
+    overflow:auto;
+    padding:14px;
+    display:flex;
+    flex-direction:column;
+    gap:12px;
+  }
+
+  .msg{
+    max-width:92%;
+    border-radius:16px;
+    padding:11px 12px;
+    border:1px solid rgba(255,255,255,0.06);
+    line-height:1.5;
+    font-size:13px;
+    white-space:pre-wrap;
+    word-break:break-word;
+  }
+
+  .msg.user{
+    align-self:flex-end;
+    background:rgba(35,255,106,0.10);
+    border-color:rgba(35,255,106,0.18);
+    color:#dbffe6;
+  }
+
+  .msg.assistant{
+    align-self:flex-start;
+    background:rgba(255,255,255,0.03);
+    color:#d7ffe3;
+  }
+
+  .msg.error{
+    align-self:flex-start;
+    background:rgba(255,107,107,0.10);
+    border-color:rgba(255,107,107,0.24);
+    color:#ffd1d1;
+  }
+
+  .chat-input-wrap{
+    padding:12px;
+    border-top:1px solid rgba(255,255,255,0.06);
+    display:flex;
+    gap:10px;
+    background:rgba(0,0,0,0.4);
+  }
+
+  .chat-input{
+    flex:1;
+    resize:none;
+    border-radius:14px;
+    border:1px solid rgba(255,255,255,0.08);
+    background:rgba(255,255,255,0.03);
+    color:var(--text);
+    padding:11px 12px;
+    font:inherit;
+    font-size:13px;
+    outline:none;
+    min-height:44px;
+    max-height:120px;
+  }
+
+  .chat-input:focus{
+    border-color:var(--border-strong);
+    box-shadow:0 0 0 3px rgba(35,255,106,0.08);
+  }
+
+  .send-btn{
+    min-width:84px;
+  }
+
+  /* Suggest modal */
+  .modal{
+    position:fixed;
+    inset:0;
+    display:none;
+    z-index:2600;
+    background:rgba(0,0,0,0.72);
+    backdrop-filter: blur(8px);
+    align-items:center;
+    justify-content:center;
+    padding:20px;
+  }
+
+  .modal.open{display:flex;}
+
+  .modal-card{
+    width:min(640px, 100%);
+    border-radius:22px;
+    border:1px solid var(--border);
+    background:rgba(0,0,0,0.88);
+    box-shadow:0 24px 60px rgba(0,0,0,0.6);
+    overflow:hidden;
+  }
+
+  .modal-head{
+    padding:16px 16px 12px;
+    background:linear-gradient(180deg, rgba(35,255,106,0.12), rgba(35,255,106,0.04));
+    border-bottom:1px solid rgba(255,255,255,0.06);
+  }
+
+  .modal-head h2{
+    margin:0;
+    color:var(--glow);
+    font-size:16px;
+  }
+
+  .modal-head p{
+    margin:8px 0 0;
+    color:var(--muted);
+    font-size:12px;
+    line-height:1.5;
+  }
+
+  .modal-body{
+    padding:16px;
+    display:flex;
+    flex-direction:column;
+    gap:12px;
+  }
+
+  .field{
+    display:flex;
+    flex-direction:column;
+    gap:8px;
+  }
+
+  .field label{
+    font-size:12px;
+    color:var(--muted);
+  }
+
+  .field input,
+  .field textarea{
+    width:100%;
+    box-sizing:border-box;
+    border-radius:14px;
+    border:1px solid rgba(255,255,255,0.08);
+    background:rgba(255,255,255,0.03);
+    color:var(--text);
+    padding:11px 12px;
+    font:inherit;
+    font-size:13px;
+    outline:none;
+  }
+
+  .field textarea{
+    min-height:120px;
+    resize:vertical;
+  }
+
+  .field input:focus,
+  .field textarea:focus{
+    border-color:var(--border-strong);
+    box-shadow:0 0 0 3px rgba(35,255,106,0.08);
+  }
+
+  .modal-actions{
+    display:flex;
+    gap:10px;
+    justify-content:flex-end;
+    flex-wrap:wrap;
+    margin-top:4px;
+  }
+
+  .toast{
+    position:fixed;
+    left:50%;
+    bottom:20px;
+    transform:translateX(-50%);
+    z-index:4000;
+    padding:10px 14px;
+    border-radius:999px;
+    border:1px solid var(--border);
+    background:rgba(0,0,0,0.85);
+    color:var(--glow);
+    font-size:12px;
+    box-shadow:0 14px 40px rgba(0,0,0,0.42);
+    display:none;
+  }
+
+  .toast.show{display:block;}
+
+  @media (max-width:780px){
+    .wrap{padding:18px 14px 110px}
+    .term{padding:12px}
+    .grid{grid-template-columns:repeat(auto-fill,minmax(160px,1fr))}
+    .header{
+      align-items:flex-start;
+    }
+    .chat-panel{
+      right:12px;
+      left:12px;
+      width:auto;
+      height:min(66vh, 560px);
+    }
+    .chat-launcher{
+      right:12px;
+      bottom:12px;
+    }
+  }
 </style>
 </head>
 <body>
@@ -103,8 +671,18 @@
 
 <div class="wrap">
   <div class="header">
-    <div class="dots" aria-hidden="true"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span></div>
-    <div class="title">unblocked-list</div>
+    <div class="header-left">
+      <div class="dots" aria-hidden="true"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span></div>
+      <div class="title-wrap">
+        <div class="title">unblocked-list</div>
+        <div class="subtitle">Terminal search, fullscreen game overlay, AI assistant, and suggestion inbox.</div>
+      </div>
+    </div>
+
+    <div class="header-actions">
+      <button class="btn" id="suggestBtn" type="button">Suggest games</button>
+      <button class="btn primary" id="openChatBtn" type="button">AI chat</button>
+    </div>
   </div>
 
   <div class="term" role="search" aria-label="terminal search">
@@ -117,14 +695,78 @@
         </div>
       </div>
     </div>
-    <div class="hint">Tab to autocomplete, Enter to open (exact match or selection). Use ↑ ↓ to move.</div>
+    <div class="hint">Tab to autocomplete. Enter to open. Use ↑ ↓ to move. Click a game to launch it fullscreen.</div>
+  </div>
+
+  <div class="pill-row" aria-hidden="true">
+    <span class="pill">AI can answer questions</span>
+    <span class="pill">AI can suggest games</span>
+    <span class="pill">Suggestions are saved to a file</span>
+    <span class="pill">Games open in an overlay iframe</span>
   </div>
 
   <div id="grid" class="grid" aria-live="polite"></div>
 </div>
 
+<!-- Fullscreen game overlay -->
+<div id="gameOverlay" aria-hidden="true">
+  <div class="overlay-topbar">
+    <button class="overlay-chip" id="closeGameBtn" type="button">Close game</button>
+  </div>
+  <div class="back-edge" id="backEdge" aria-hidden="true" title="Back">
+    <button class="back-button" id="backBtn" type="button" aria-label="Back to list">←</button>
+  </div>
+  <iframe id="gameFrame" title="Game"></iframe>
+</div>
+
+<!-- Chat -->
+<button class="chat-launcher" id="chatLauncher" type="button" aria-label="Open AI chat">✦</button>
+<div class="chat-panel" id="chatPanel" aria-label="AI chatbot">
+  <div class="chat-head">
+    <div>
+      <h2>AI Assistant</h2>
+      <div class="small">Ask for game recommendations, site help, or general chat. Messages go through your server to OpenRouter.</div>
+    </div>
+    <div class="chat-head-actions">
+      <button class="icon-btn" id="chatClearBtn" type="button" title="Clear chat">⌫</button>
+      <button class="icon-btn" id="chatCloseBtn" type="button" title="Close">×</button>
+    </div>
+  </div>
+  <div class="chat-messages" id="chatMessages"></div>
+  <div class="chat-input-wrap">
+    <textarea id="chatInput" class="chat-input" rows="1" placeholder="Ask something..."></textarea>
+    <button class="btn primary send-btn" id="chatSendBtn" type="button">Send</button>
+  </div>
+</div>
+
+<!-- Suggest modal -->
+<div class="modal" id="suggestModal" aria-hidden="true">
+  <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="suggestTitle">
+    <div class="modal-head">
+      <h2 id="suggestTitle">Suggest a game</h2>
+      <p>Send a game idea, fix, or request. It gets appended to a file on the backend so you can open it from the workspace.</p>
+    </div>
+    <div class="modal-body">
+      <div class="field">
+        <label for="gameName">Game name</label>
+        <input id="gameName" type="text" placeholder="e.g. Geometry Dash clone" />
+      </div>
+      <div class="field">
+        <label for="gameNotes">Details</label>
+        <textarea id="gameNotes" placeholder="Why it fits, link if you have one, what makes it good, etc."></textarea>
+      </div>
+      <div class="modal-actions">
+        <button class="btn" id="cancelSuggestBtn" type="button">Cancel</button>
+        <button class="btn primary" id="submitSuggestBtn" type="button">Send suggestion</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast">Saved</div>
+
 <script>
-/* original repo-derived list with folders + non-.swf files only */
+/* Game list */
 const raw = `1v1.lol
 2048
 8-ball-pool
@@ -251,45 +893,107 @@ vex-8
 wolfenstein-3d
 yongjin-brick-breaker`;
 
-/* build files array (exclude any .swf accidentally present) */
-const files = raw.split(/\r?\n/).map(s=>s.trim()).filter(Boolean).filter(f => !f.toLowerCase().endsWith('.swf'));
+const files = raw
+  .split(/\r?\n/)
+  .map(s => s.trim())
+  .filter(Boolean)
+  .filter(f => !f.toLowerCase().endsWith('.swf'));
 
-/* DOM refs */
 const input = document.getElementById('termInput');
 const suggBox = document.getElementById('suggestions');
 const suggList = document.getElementById('suggestList');
 const grid = document.getElementById('grid');
 
-/* state */
-let suggestions = [];
-let active = -1; // index in suggestions
+const gameOverlay = document.getElementById('gameOverlay');
+const gameFrame = document.getElementById('gameFrame');
+const closeGameBtn = document.getElementById('closeGameBtn');
+const backEdge = document.getElementById('backEdge');
+const backBtn = document.getElementById('backBtn');
 
-/* helper: compute suggestions based on current q */
-function computeSuggestions(q){
-  if(!q) return []; 
+const chatLauncher = document.getElementById('chatLauncher');
+const chatPanel = document.getElementById('chatPanel');
+const chatMessages = document.getElementById('chatMessages');
+const chatInput = document.getElementById('chatInput');
+const chatSendBtn = document.getElementById('chatSendBtn');
+const chatCloseBtn = document.getElementById('chatCloseBtn');
+const chatClearBtn = document.getElementById('chatClearBtn');
+const openChatBtn = document.getElementById('openChatBtn');
+
+const suggestBtn = document.getElementById('suggestBtn');
+const suggestModal = document.getElementById('suggestModal');
+const gameName = document.getElementById('gameName');
+const gameNotes = document.getElementById('gameNotes');
+const cancelSuggestBtn = document.getElementById('cancelSuggestBtn');
+const submitSuggestBtn = document.getElementById('submitSuggestBtn');
+
+const toast = document.getElementById('toast');
+
+let suggestions = [];
+let active = -1;
+let chatOpen = false;
+let sendLock = false;
+
+const conversation = [
+  {
+    role: "system",
+    content:
+      "You are the assistant for an unblocked games site. Be helpful, concise, and practical. Recommend games from the local list when asked. Help with site navigation, features, and game suggestions."
+  }
+];
+
+function escapeHtml(str) {
+  return String(str).replace(/[&<>"']/g, s => ({
+    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+  }[s]));
+}
+
+function gameUrl(name) {
+  return new URL(encodeURI(name) + '/', document.baseURI).href;
+}
+
+function showToast(message) {
+  toast.textContent = message;
+  toast.classList.add('show');
+  clearTimeout(showToast._t);
+  showToast._t = setTimeout(() => toast.classList.remove('show'), 2200);
+}
+
+function computeSuggestions(q) {
+  if (!q) return [];
   const ql = q.toLowerCase();
-  // prioritize startsWith matches, then contains
-  const starts = files.filter(f=>f.toLowerCase().startsWith(ql));
-  const contains = files.filter(f=>!f.toLowerCase().startsWith(ql) && f.toLowerCase().includes(ql));
+  const starts = files.filter(f => f.toLowerCase().startsWith(ql));
+  const contains = files.filter(f => !f.toLowerCase().startsWith(ql) && f.toLowerCase().includes(ql));
   return [...starts, ...contains].slice(0, 8);
 }
 
-/* render suggestions popup */
-function renderSuggestions(arr){
+function setActive(index) {
+  const lis = suggList.querySelectorAll('li');
+  lis.forEach(li => li.classList.remove('active'));
+  if (index >= 0 && lis[index]) lis[index].classList.add('active');
+  active = index;
+}
+
+function renderSuggestions(arr) {
   suggestions = arr;
   active = arr.length ? 0 : -1;
-  if(!arr.length){ suggBox.style.display='none'; suggList.innerHTML=''; return;}
-  suggBox.style.display='block';
+
+  if (!arr.length) {
+    suggBox.style.display = 'none';
+    suggList.innerHTML = '';
+    return;
+  }
+
+  suggBox.style.display = 'block';
   suggList.innerHTML = '';
+
   arr.forEach((s, i) => {
     const li = document.createElement('li');
-    li.setAttribute('role','option');
+    li.setAttribute('role', 'option');
     li.dataset.index = i;
-    li.innerHTML = `<span class="suggest-name">${escapeHtml(s)}</span><span class="muted">${escapeHtml('/unblocked-list/' + s)}</span>`;
-    if(i === active) li.classList.add('active');
-    li.addEventListener('mouseenter', ()=>{ setActive(i); });
-    li.addEventListener('mouseleave', ()=>{ setActive(-1); });
-    li.addEventListener('mousedown', (ev)=>{ // mousedown to avoid blur before click
+    li.innerHTML = `<span class="suggest-name">${escapeHtml(s)}</span><span class="suggest-path">${escapeHtml('./' + s + '/')}</span>`;
+    if (i === active) li.classList.add('active');
+    li.addEventListener('mouseenter', () => setActive(i));
+    li.addEventListener('mousedown', ev => {
       ev.preventDefault();
       selectSuggestion(i);
     });
@@ -297,129 +1001,301 @@ function renderSuggestions(arr){
   });
 }
 
-/* set active suggestion index (visual) */
-function setActive(index){
-  const lis = suggList.querySelectorAll('li');
-  lis.forEach(li=>li.classList.remove('active'));
-  if(index >=0 && lis[index]) lis[index].classList.add('active');
-  active = index;
-}
-
-/* autocomplete current input from active suggestion or first suggestion */
-function autocomplete(){
-  if(suggestions.length === 0) return;
+function autocomplete() {
+  if (!suggestions.length) return;
   const idx = active >= 0 ? active : 0;
   input.value = suggestions[idx];
-  // trigger update
   onInput();
 }
 
-/* when a suggestion is chosen (enter or click) */
-function selectSuggestion(idx){
-  if(idx < 0 || idx >= suggestions.length) return;
-  const name = suggestions[idx];
-  // navigate to the URL
-  const url = '/unblocked-list/' + encodeURIComponent(name);
-  window.location.href = url;
+function openGame(name) {
+  gameFrame.src = gameUrl(name);
+  gameOverlay.classList.add('open');
+  gameOverlay.setAttribute('aria-hidden', 'false');
+  backEdge.classList.add('show');
+  document.body.style.overflow = 'hidden';
 }
 
-/* escape html for safe rendering */
-function escapeHtml(str){ return str.replace(/[&<>"']/g, s=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[s])); }
-
-/* update grid below and suggestions as user types */
-function onInput(){
-  const q = input.value;
-  // suggestions
-  const sug = computeSuggestions(q);
-  renderSuggestions(sug);
-  // render grid (full filtered list, not just suggestions)
-  renderGrid(q);
+function closeGame() {
+  gameOverlay.classList.remove('open');
+  gameOverlay.setAttribute('aria-hidden', 'true');
+  gameFrame.src = 'about:blank';
+  backEdge.classList.remove('show');
+  document.body.style.overflow = '';
 }
 
-/* render grid of games filtered by q (if q empty show all) */
-function renderGrid(q){
+function selectSuggestion(idx) {
+  if (idx < 0 || idx >= suggestions.length) return;
+  openGame(suggestions[idx]);
+}
+
+function renderGrid(q) {
   const ql = (q || '').toLowerCase();
   const filtered = ql ? files.filter(f => f.toLowerCase().includes(ql)) : files;
   grid.innerHTML = '';
   filtered.forEach(name => {
     const a = document.createElement('a');
     a.className = 'item';
-    a.href = '/unblocked-list/' + encodeURIComponent(name);
-    a.innerHTML = `<div class="name">${escapeHtml(name)}</div><div class="path">/unblocked-list/${escapeHtml(name)}</div>`;
+    a.href = '#';
+    a.dataset.game = name;
+    a.innerHTML = `<div class="name">${escapeHtml(name)}</div><div class="path">${escapeHtml('./' + name + '/')}</div>`;
+    a.addEventListener('click', ev => {
+      ev.preventDefault();
+      openGame(name);
+    });
     grid.appendChild(a);
   });
 }
 
-/* helpers for keyboard nav */
-function moveActive(delta){
-  if(suggestions.length === 0) return;
-  active = (active + delta + suggestions.length) % suggestions.length;
-  setActive(active);
-  // ensure active item visible
-  const lis = suggList.querySelectorAll('li');
-  if(lis[active]) lis[active].scrollIntoView({block:'nearest'});
+function onInput() {
+  const q = input.value;
+  renderSuggestions(computeSuggestions(q));
+  renderGrid(q);
 }
 
-/* input event handlers */
 input.addEventListener('input', onInput);
 
 input.addEventListener('keydown', (e) => {
-  if(e.key === 'ArrowDown'){
+  if (e.key === 'ArrowDown') {
     e.preventDefault();
-    moveActive(1);
-  } else if(e.key === 'ArrowUp'){
+    if (suggestions.length) {
+      active = (active + 1 + suggestions.length) % suggestions.length;
+      setActive(active);
+      suggList.querySelectorAll('li')[active]?.scrollIntoView({ block: 'nearest' });
+    }
+  } else if (e.key === 'ArrowUp') {
     e.preventDefault();
-    moveActive(-1);
-  } else if(e.key === 'Tab'){
-    if(suggestions.length){
+    if (suggestions.length) {
+      active = (active - 1 + suggestions.length) % suggestions.length;
+      setActive(active);
+      suggList.querySelectorAll('li')[active]?.scrollIntoView({ block: 'nearest' });
+    }
+  } else if (e.key === 'Tab') {
+    if (suggestions.length) {
       e.preventDefault();
       autocomplete();
-      // reopen suggestions for new input
       setTimeout(onInput, 0);
     }
-  } else if(e.key === 'Enter'){
+  } else if (e.key === 'Enter') {
     e.preventDefault();
-    if(active >= 0 && suggestions[active]){
-      selectSuggestion(active);
-      return;
-    }
-    // exact-match navigation (case-insensitive)
     const typed = input.value.trim();
-    if(!typed) return;
+    if (!typed) return;
     const match = files.find(f => f.toLowerCase() === typed.toLowerCase());
-    if(match){
-      window.location.href = '/unblocked-list/' + encodeURIComponent(match);
-    } else {
-      // no exact match: if there is exactly one suggestion, navigate there
-      if(suggestions.length === 1){
-        selectSuggestion(0);
-      }
+    if (active >= 0 && suggestions[active]) {
+      selectSuggestion(active);
+    } else if (match) {
+      openGame(match);
+    } else if (suggestions.length === 1) {
+      selectSuggestion(0);
     }
-  } else if(e.key === 'Escape'){
-    // hide suggestions
-    suggestions = []; renderSuggestions([]);
+  } else if (e.key === 'Escape') {
+    suggestions = [];
+    renderSuggestions([]);
   }
 });
 
-/* click outside hides suggestions */
-document.addEventListener('click', (ev)=>{
-  if(!ev.target.closest('.term')){ suggestions = []; renderSuggestions([]); }
+document.addEventListener('click', (ev) => {
+  if (!ev.target.closest('.term')) {
+    suggestions = [];
+    renderSuggestions([]);
+  }
 });
 
-/* initial render: show full grid and placeholder text in input */
-renderGrid('');
-input.placeholder = ''; // terminal shows prompt on the left instead
-input.value = '';
-// focus input on page load
-setTimeout(()=> input.focus(), 150);
+closeGameBtn.addEventListener('click', closeGame);
+backBtn.addEventListener('click', closeGame);
+backEdge.addEventListener('click', closeGame);
 
-/* matrix background (full-screen) */
+gameOverlay.addEventListener('click', (ev) => {
+  if (ev.target === gameOverlay) closeGame();
+});
+
+window.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    if (gameOverlay.classList.contains('open')) closeGame();
+    if (chatPanel.classList.contains('open')) toggleChat(false);
+    if (suggestModal.classList.contains('open')) closeSuggest();
+  }
+});
+
+function toggleChat(force) {
+  chatOpen = typeof force === 'boolean' ? force : !chatOpen;
+  chatPanel.classList.toggle('open', chatOpen);
+  if (chatOpen) {
+    setTimeout(() => chatInput.focus(), 0);
+    if (!chatMessages.dataset.booted) {
+      addAssistantMessage(
+        "Hi. I can recommend games, explain how the site works, and answer general questions."
+      );
+      chatMessages.dataset.booted = "1";
+    }
+  }
+}
+
+function addMessage(role, text, extraClass = '') {
+  const div = document.createElement('div');
+  div.className = `msg ${role} ${extraClass}`.trim();
+  div.textContent = text;
+  chatMessages.appendChild(div);
+  chatMessages.scrollTop = chatMessages.scrollHeight;
+  return div;
+}
+
+function addAssistantMessage(text, extraClass = '') {
+  return addMessage('assistant', text, extraClass);
+}
+
+function addUserMessage(text) {
+  return addMessage('user', text);
+}
+
+async function sendChat() {
+  const text = chatInput.value.trim();
+  if (!text || sendLock) return;
+
+  sendLock = true;
+  chatSendBtn.disabled = true;
+  chatInput.disabled = true;
+
+  addUserMessage(text);
+  chatInput.value = '';
+  autoGrow(chatInput);
+
+  const pending = addAssistantMessage('Thinking...');
+  conversation.push({ role: 'user', content: text });
+
+  try {
+    const res = await fetch('/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        messages: conversation,
+        model: 'openai/gpt-4o-mini'
+      })
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      const msg = data?.error || data?.message || 'Chat request failed.';
+      pending.textContent = msg;
+      pending.classList.add('error');
+      conversation.push({ role: 'assistant', content: msg });
+      return;
+    }
+
+    const reply =
+      data?.choices?.[0]?.message?.content ||
+      data?.message?.content ||
+      data?.response ||
+      'No response returned.';
+
+    pending.textContent = reply;
+    conversation.push({ role: 'assistant', content: reply });
+  } catch (err) {
+    const msg = 'Network error while contacting the chat proxy.';
+    pending.textContent = msg;
+    pending.classList.add('error');
+    conversation.push({ role: 'assistant', content: msg });
+  } finally {
+    sendLock = false;
+    chatSendBtn.disabled = false;
+    chatInput.disabled = false;
+    chatInput.focus();
+  }
+}
+
+function autoGrow(el) {
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 120) + 'px';
+}
+
+chatInput.addEventListener('input', () => autoGrow(chatInput));
+chatInput.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    sendChat();
+  }
+});
+
+chatSendBtn.addEventListener('click', sendChat);
+chatLauncher.addEventListener('click', () => toggleChat());
+openChatBtn.addEventListener('click', () => toggleChat(true));
+chatCloseBtn.addEventListener('click', () => toggleChat(false));
+chatClearBtn.addEventListener('click', () => {
+  chatMessages.innerHTML = '';
+  conversation.length = 1;
+  showToast('Chat cleared');
+  addAssistantMessage('Chat cleared. Ask me anything.');
+});
+
+function openSuggest() {
+  suggestModal.classList.add('open');
+  suggestModal.setAttribute('aria-hidden', 'false');
+  setTimeout(() => gameName.focus(), 0);
+}
+
+function closeSuggest() {
+  suggestModal.classList.remove('open');
+  suggestModal.setAttribute('aria-hidden', 'true');
+}
+
+suggestBtn.addEventListener('click', openSuggest);
+cancelSuggestBtn.addEventListener('click', closeSuggest);
+suggestModal.addEventListener('click', (ev) => {
+  if (ev.target === suggestModal) closeSuggest();
+});
+
+submitSuggestBtn.addEventListener('click', async () => {
+  const name = gameName.value.trim();
+  const notes = gameNotes.value.trim();
+
+  if (!name && !notes) {
+    showToast('Add a name or details first');
+    return;
+  }
+
+  submitSuggestBtn.disabled = true;
+
+  try {
+    const res = await fetch('/api/suggestions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name,
+        notes,
+        page: location.href,
+        when: new Date().toISOString()
+      })
+    });
+
+    const data = await res.json();
+    if (!res.ok || !data.ok) throw new Error(data.error || 'Save failed');
+
+    gameName.value = '';
+    gameNotes.value = '';
+    closeSuggest();
+    showToast('Suggestion saved');
+  } catch (err) {
+    showToast(err.message || 'Failed to save suggestion');
+  } finally {
+    submitSuggestBtn.disabled = false;
+  }
+});
+
+/* initial render */
+renderGrid('');
+input.placeholder = '';
+input.value = '';
+setTimeout(() => input.focus(), 150);
+
+/* matrix background */
 (function matrix(){
   const c = document.getElementById('matrix');
   const ctx = c.getContext('2d');
   let cols = Math.max(6, Math.floor(window.innerWidth / 14));
   let drops = Array.from({length:cols}, ()=>Math.floor(Math.random()*40));
   const chars = "01<>/\\|[]{}abcdefghijklmnopqrstuvwxyz0123456789".split('');
+
   function resize(){
     c.width = window.innerWidth;
     c.height = window.innerHeight;
@@ -428,11 +1304,13 @@ setTimeout(()=> input.focus(), 150);
   }
   window.addEventListener('resize', resize);
   resize();
+
   function step(){
     ctx.fillStyle = 'rgba(0,0,0,0.06)';
     ctx.fillRect(0,0,c.width,c.height);
     ctx.font = '12px "JetBrains Mono", monospace';
     const colW = c.width / Math.max(1, cols);
+
     for(let i=0;i<cols;i++){
       const x = i*colW + 6;
       const y = drops[i]*14;
@@ -445,6 +1323,11 @@ setTimeout(()=> input.focus(), 150);
   }
   requestAnimationFrame(step);
 })();
+
+/* small safety net */
+window.addEventListener('beforeunload', () => {
+  closeGame();
+});
 </script>
 </body>
 </html>
